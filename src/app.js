@@ -2,15 +2,20 @@ import { createStore } from './store';
 import { renderEggStage } from './components/EggStage';
 import { renderSignupForm } from './components/SignupForm';
 import { renderCompanionView } from './components/CompanionView';
+import { get3DManager, dispose3DCompanion, Companion3DManager } from './3d/companion3DManager.js';
 
 const store = createStore();
+let current3DManager = null;
+let currentStage = null;
 
 export function initApp() {
   const app = document.getElementById('app');
-  
+
   function render() {
     const state = store.getState();
-    
+    const previousStage = currentStage;
+    currentStage = state.stage;
+
     app.innerHTML = `
       <div class="gameboy-screen">
         <div class="screen-inner">
@@ -19,8 +24,20 @@ export function initApp() {
         ${state.stage === 'companion' ? renderControls() : ''}
       </div>
     `;
-    
+
     attachEventListeners();
+
+    // Handle 3D initialization/cleanup
+    if (state.stage === 'companion' && previousStage !== 'companion') {
+      // Initialize 3D when entering companion view
+      init3DSystem(state.companion);
+    } else if (previousStage === 'companion' && state.stage !== 'companion') {
+      // Dispose 3D when leaving companion view
+      dispose3DSystem();
+    } else if (state.stage === 'companion') {
+      // Update 3D if already initialized
+      update3DSystem(state.companion);
+    }
   }
   
   function renderCurrentStage(state) {
@@ -133,24 +150,29 @@ export function initApp() {
   function handleAction(action) {
     const state = store.getState();
     const companion = state.companion;
-    
+
+    // Trigger 3D animation
+    if (current3DManager && current3DManager.isInitialized) {
+      current3DManager.playAction(action);
+    }
+
     let newMessage = '';
     let statChanges = {};
-    
+
     switch(action) {
       case 'feed':
         statChanges = { happiness: Math.min(100, companion.happiness + 10) };
         newMessage = `*munch munch* Thanks! That was delicious! 😋`;
         break;
       case 'play':
-        statChanges = { 
+        statChanges = {
           happiness: Math.min(100, companion.happiness + 15),
           energy: Math.max(0, companion.energy - 10)
         };
         newMessage = `Yay! That was so much fun! Let's play again soon! 🎉`;
         break;
       case 'sleep':
-        statChanges = { 
+        statChanges = {
           status: 'sleeping',
           energy: 100
         };
@@ -175,7 +197,7 @@ export function initApp() {
         }, 5000);
         break;
       case 'quest':
-        statChanges = { 
+        statChanges = {
           status: 'questing',
           energy: Math.max(0, companion.energy - 20)
         };
@@ -185,7 +207,7 @@ export function initApp() {
         }, 8000);
         break;
     }
-    
+
     store.setState({
       companion: {
         ...companion,
@@ -201,7 +223,7 @@ export function initApp() {
         }
       ]
     });
-    
+
     render();
   }
   
@@ -295,7 +317,96 @@ export function initApp() {
       render();
     }, 1000);
   }
-  
+
+  // 3D System Management
+  async function init3DSystem(companionState) {
+    // Check WebGL availability
+    if (!Companion3DManager.isWebGLAvailable()) {
+      console.warn('WebGL not available, falling back to 2D');
+      showFallback2D();
+      return;
+    }
+
+    const canvas = document.getElementById('arlo-canvas');
+    if (!canvas) {
+      console.error('Canvas not found');
+      return;
+    }
+
+    try {
+      // Show loading overlay
+      const loadingOverlay = document.getElementById('loading-3d');
+      if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+      current3DManager = get3DManager();
+      await current3DManager.init(canvas, companionState);
+
+      // Hide loading overlay
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+      // Setup canvas click handler
+      canvas.addEventListener('click', (event) => {
+        if (current3DManager) {
+          current3DManager.handleClick(event);
+        }
+      });
+
+      // Listen for 3D events
+      window.addEventListener('companion-clicked', () => {
+        const state = store.getState();
+        store.setState({
+          companion: {
+            ...state.companion,
+            happiness: Math.min(100, state.companion.happiness + 5)
+          }
+        });
+        render();
+      });
+
+      window.addEventListener('evolution-complete', (event) => {
+        const { stage } = event.detail;
+        const state = store.getState();
+        store.setState({
+          companion: {
+            ...state.companion,
+            evolutionStage: stage
+          }
+        });
+        render();
+      });
+
+      console.log('✓ 3D system initialized');
+    } catch (error) {
+      console.error('Failed to initialize 3D:', error);
+      showFallback2D();
+    }
+  }
+
+  function update3DSystem(companionState) {
+    if (current3DManager && current3DManager.isInitialized) {
+      current3DManager.updateCompanion(companionState);
+    }
+  }
+
+  function dispose3DSystem() {
+    if (current3DManager) {
+      dispose3DCompanion();
+      current3DManager = null;
+    }
+  }
+
+  function showFallback2D() {
+    const canvas = document.getElementById('arlo-canvas');
+    const fallback = document.getElementById('fallback-sprite');
+    const loading = document.getElementById('loading-3d');
+
+    if (canvas) canvas.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+    if (loading) loading.style.display = 'none';
+
+    console.log('Using 2D fallback mode');
+  }
+
   // Initial render
   render();
   
