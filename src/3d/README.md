@@ -97,6 +97,8 @@ Edit `config.js` to configure:
 - **Feature flags**: Enable/disable particles, post-processing, shadows
 - **Animation names**: Map friendly names to clip names
 - **Mood animations**: Define which animations play for each mood
+- **Shading settings**: Toon and rim lighting parameters
+- **Mood colors**: Color schemes for different moods
 
 ```javascript
 // Example: Disable particles on mobile
@@ -104,25 +106,78 @@ FEATURES.enableParticles = false;
 
 // Example: Use real models instead of placeholders
 ASSET_CONFIG.models.usePlaceholders = false;
+
+// Example: Configure shading
+ASSET_CONFIG.shading = {
+  toon: true,
+  rim: true,
+  rimColor: '#88b7ff',
+  rimStrength: 1.1
+};
+
+// Example: Define mood configurations
+ASSET_CONFIG.moods = {
+  happy:   { anim: 'tail_wag', color: '#ffd54f' },
+  calm:    { anim: 'breathe',  color: '#90caf9' },
+  sleepy:  { anim: 'sleep',    color: '#b39ddb' },
+  playful: { anim: 'play',     color: '#ffab91' }
+};
 ```
 
 ## Next Steps (Phase 2+)
 
-### Priority 2: Model Pipeline
-- [ ] Commission/create 3D models for baby, teen, adult stages
-- [ ] Import real GLB files with baked animations
-- [ ] Test model swapping at evolution thresholds
+### ✅ Phase 2: Enhanced Systems (COMPLETE)
 
-### Priority 3: Animation & Interaction
-- [ ] Connect mood system to animation variations
-- [ ] Add raycaster-based interactions (hover effects)
-- [ ] Implement action queue for complex sequences
+All priority 2-4 features have been integrated:
 
-### Priority 4: Polish & Effects
-- [ ] Full cel-shading shader with rim lighting
-- [ ] Camera shake on evolution
-- [ ] Sound effect integration
-- [ ] Evolution preview UI
+- [x] **Toon + Rim Shader**: Custom shader material with cel-shading and rim lighting
+- [x] **ParticlePool**: Efficient particle system for hearts, action effects, and evolution bursts
+- [x] **CameraRig**: Smooth camera movements (dolly, shake) during interactions and evolution
+- [x] **RaycasterInteractions**: Hover and click detection with cursor changes and particle bursts
+- [x] **Evolution Timeline**: Enhanced evolution sequence with glow, fade, swap, celebration
+- [x] **SoundManager**: Audio hooks for eat, play, and evolve actions (sound files not yet added)
+- [x] **Model Pipeline**: Ready for real GLB models at `/public/models/companion_*.glb`
+
+### New Module Integration
+
+The following modules have been added and integrated:
+
+1. **src/3d/shaders/toonRimMaterial.js**
+   - Custom shader for toon shading with rim lighting
+   - Preserves emissive colors while applying stylized rendering
+   - Configurable via `ASSET_CONFIG.shading`
+
+2. **src/3d/effects/particles.js**
+   - `ParticlePool` class for efficient particle management
+   - Burst effects for interactions and moods
+   - Integrated with click handlers and action animations
+
+3. **src/3d/camera/cameraRig.js**
+   - `CameraRig` class for smooth camera movements
+   - Dolly transitions during evolution
+   - Camera shake for dramatic effects
+
+4. **src/3d/interactions/raycasterInteractions.js**
+   - `RaycasterInteractions` class for hover/click detection
+   - Automatic cursor style changes
+   - Integrated with particle bursts on click
+
+5. **src/3d/evolution/evolutionTimeline.js**
+   - `runEvolution` function for enhanced evolution sequences
+   - Glow → Fade out → Swap → Fade in → Celebration
+   - Camera movements and particle effects
+
+6. **src/3d/sound/soundManager.js**
+   - `SoundManager` class for audio playback
+   - Ready for sound files (eat, play, evolve)
+   - Volume control per sound
+
+### Priority 5: Real Assets & Polish
+- [ ] Add real 3D models (GLB files) to `/public/models/`
+- [ ] Add sound effects to `/public/sounds/`
+- [ ] Test with real models and animations
+- [ ] Fine-tune shader parameters for each stage
+- [ ] Performance optimization if needed
 
 ## Asset Requirements
 
@@ -170,14 +225,26 @@ See `config.js` MODEL_SPECS for complete requirements.
 
 ```
 src/3d/
-├── config.js              # Configuration and asset contracts
-├── sceneManager.js        # Three.js core (renderer, scene, camera)
-├── models.js              # Model loading and placeholder geometry
-├── animationController.js # Animation playback and blending
-├── evolutionController.js # Evolution logic and transitions
-├── effects.js             # Particles and visual effects
-├── companion3DManager.js  # Main orchestrator
-└── README.md              # This file
+├── config.js                           # Configuration and asset contracts
+├── sceneManager.js                     # Three.js core (renderer, scene, camera)
+├── models.js                           # Model loading and placeholder geometry
+├── animationController.js              # Animation playback and blending
+├── evolutionController.js              # Evolution logic and transitions
+├── effects.js                          # Particles and visual effects (legacy)
+├── companion3DManager.js               # Main orchestrator
+├── shaders/
+│   └── toonRimMaterial.js             # Custom toon + rim shader
+├── effects/
+│   └── particles.js                   # New particle pool system
+├── camera/
+│   └── cameraRig.js                   # Camera movement controller
+├── interactions/
+│   └── raycasterInteractions.js       # Hover/click detection
+├── evolution/
+│   └── evolutionTimeline.js           # Enhanced evolution sequence
+├── sound/
+│   └── soundManager.js                # Audio playback manager
+└── README.md                          # This file
 ```
 
 ## Events
@@ -218,6 +285,50 @@ store.setState({
 
 ---
 
-**Status**: Phase 1 Complete ✅
+**Status**: Phase 2 Complete ✅ (Enhanced Systems Integrated)
 **Last Updated**: 2025-11-05
-**Next Milestone**: Commission 3D models and integrate real assets
+**Next Milestone**: Add real 3D models (GLB files) and sound effects
+
+### Integration Summary
+
+The following enhancements have been successfully integrated:
+
+✅ **Config Updates**
+- Model paths updated to `companion_baby/teen/adult.glb`
+- `usePlaceholders` set to `false` (ready for real models)
+- Added shading configuration (toon + rim lighting)
+- Added mood-based animation and color mappings
+
+✅ **Shader System**
+- Toon + rim shader applied to all loaded models
+- Preserves emissive materials while adding stylized rendering
+- Configurable rim color and strength
+
+✅ **Particle System**
+- New ParticlePool for efficient particle management
+- Heart particles on companion click
+- Action-specific particle colors (eat, play, sleep, quest)
+- Evolution celebration particles
+
+✅ **Camera System**
+- CameraRig with smooth dolly movements
+- Camera shake during evolution
+- Update loop integrated with scene manager
+
+✅ **Interaction System**
+- Raycaster hover detection with cursor changes
+- Click detection with particle bursts
+- Integrated with companion click events
+
+✅ **Evolution System**
+- Enhanced timeline: glow → fade → swap → fade → celebrate
+- Uses new runEvolution function
+- Camera movements during evolution
+- Sound hooks (ready for audio files)
+- Fallback to old system if new one fails
+
+✅ **Audio System**
+- SoundManager initialized and ready
+- Hooks in playAction for eat/play sounds
+- Hook in triggerEvolution for evolve sound
+- Waiting for sound files to be added

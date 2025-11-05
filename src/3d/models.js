@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ASSET_CONFIG, PLACEHOLDER_CONFIG, FEATURES } from './config.js';
+import { overrideToonRim } from './shaders/toonRimMaterial.js';
 
 export class ModelLoader {
   constructor() {
@@ -143,13 +144,21 @@ export class ModelLoader {
           child.castShadow = true;
           child.receiveShadow = true;
         }
-
-        // Apply cel-shading material if enabled
-        if (FEATURES.celShading && child.material) {
-          this.applyCelShadingMaterial(child.material);
-        }
       }
     });
+
+    // Apply toon + rim shader if enabled
+    if (ASSET_CONFIG.shading && ASSET_CONFIG.shading.toon && ASSET_CONFIG.shading.rim) {
+      const rimColor = ASSET_CONFIG.shading.rimColor || '#88b7ff';
+      const rimStrength = ASSET_CONFIG.shading.rimStrength || 1.1;
+      // Convert hex string to number
+      const rimColorHex = typeof rimColor === 'string' ? parseInt(rimColor.replace('#', '0x'), 16) : rimColor;
+      overrideToonRim(model, {
+        baseColor: 0xffd54f,
+        rimColor: rimColorHex,
+        rimStrength
+      });
+    }
 
     // Center the model
     const box = new THREE.Box3().setFromObject(model);

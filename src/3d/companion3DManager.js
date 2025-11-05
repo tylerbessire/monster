@@ -6,13 +6,24 @@
 import { ThreeSceneManager } from './sceneManager.js';
 import { EvolutionController } from './evolutionController.js';
 import { ParticleSystem, showFloatingIcon } from './effects.js';
-import { FEATURES } from './config.js';
+import { FEATURES, ASSET_CONFIG } from './config.js';
+import { ParticlePool } from './effects/particles.js';
+import { CameraRig } from './camera/cameraRig.js';
+import { RaycasterInteractions } from './interactions/raycasterInteractions.js';
+import { SoundManager } from './sound/soundManager.js';
+import { runEvolution } from './evolution/evolutionTimeline.js';
+import { ModelLoader } from './models.js';
 
 export class Companion3DManager {
   constructor() {
     this.sceneManager = null;
     this.evolutionController = null;
     this.particleSystem = null;
+    this.particlePool = null;
+    this.cameraRig = null;
+    this.raycaster = null;
+    this.soundManager = null;
+    this.modelLoader = null;
     this.isInitialized = false;
     this.currentCanvas = null;
   }
@@ -42,15 +53,67 @@ export class Companion3DManager {
       this.sceneManager = new ThreeSceneManager();
       this.sceneManager.init(canvas);
 
-      // Initialize particle system
+      // Initialize particle system (old)
       this.particleSystem = new ParticleSystem(this.sceneManager);
       this.particleSystem.init();
+
+      // Initialize new ParticlePool
+      this.particlePool = new ParticlePool({ max: 256 });
+      this.particlePool.attachTo(this.sceneManager.scene);
+
+      // Initialize CameraRig
+      this.cameraRig = new CameraRig(this.sceneManager.camera);
+
+      // Initialize SoundManager
+      this.soundManager = new SoundManager();
+      // TODO: Load sound files when they're available
+      // this.soundManager.load('eat', '/sounds/eat.mp3');
+      // this.soundManager.load('play', '/sounds/play.mp3');
+      // this.soundManager.load('evolve', '/sounds/evolve.mp3');
+
+      // Initialize ModelLoader for evolution
+      this.modelLoader = new ModelLoader();
 
       // Initialize evolution controller
       this.evolutionController = new EvolutionController(this.sceneManager);
 
       const stage = companionState?.evolutionStage || 'baby';
       await this.evolutionController.init(stage);
+
+      // Initialize RaycasterInteractions
+      this.raycaster = new RaycasterInteractions(
+        this.sceneManager.camera,
+        this.sceneManager.scene,
+        canvas,
+        {
+          onClick: (obj, point) => {
+            console.log('Companion clicked!');
+            // Burst hearts at click position
+            this.particlePool.burst({
+              position: point || obj.position,
+              color: ASSET_CONFIG.moods?.happy?.color || '#ff6ea0'
+            });
+            // Play reaction animation
+            this.playAction('earTwitch');
+            // Emit click event
+            this.emitEvent('companion-clicked', {});
+          },
+          onHover: (obj) => {
+            // Change cursor on hover
+            document.body.style.cursor = obj ? 'pointer' : 'default';
+          }
+        }
+      );
+
+      // Register update callbacks for new systems
+      this.sceneManager.onUpdate((dt) => {
+        if (this.particlePool) {
+          this.particlePool.update(dt);
+        }
+        if (this.cameraRig) {
+          this.cameraRig.update(dt);
+        }
+      });
 
       // Start particle effects based on mood
       const mood = companionState?.personality?.mood || 'happy';
@@ -112,13 +175,46 @@ export class Companion3DManager {
 
     console.log(`🌟 Evolution triggered: ${fromStage} → ${toStage}`);
 
-    // Play particle burst
-    if (this.particleSystem) {
-      this.particleSystem.playEvolutionBurst();
+    // Play evolution sound
+    if (this.soundManager) {
+      this.soundManager.play('evolve', 0.8);
     }
 
-    // Play evolution sequence
-    await this.evolutionController.playEvolutionSequence(fromStage, toStage);
+    try {
+      // Use the new runEvolution timeline
+      const currentModel = this.evolutionController.getCurrentModel();
+
+      const newModel = await runEvolution({
+        currentModel,
+        loadNextStage: async () => {
+          // Load the next stage model using modelLoader
+          const gltf = await this.modelLoader.loadGLTF(
+            ASSET_CONFIG.models[toStage],
+            (progress) => console.log(`Loading ${toStage}: ${Math.round(progress * 100)}%`)
+          );
+          return gltf;
+        },
+        scene: this.sceneManager.scene,
+        cameraRig: this.cameraRig,
+        particles: this.particlePool,
+        rimOptions: {
+          rimColor: parseInt((ASSET_CONFIG.shading.rimColor || '#88b7ff').replace('#', '0x'), 16),
+          rimStrength: ASSET_CONFIG.shading.rimStrength || 1.1
+        },
+        onSwap: (model, clips) => {
+          // Update animation controller with new model and clips
+          this.evolutionController.animationController.setup(model, clips);
+          this.evolutionController.currentModel = model;
+          this.evolutionController.currentStage = toStage;
+        }
+      });
+
+      console.log('✓ Evolution complete:', toStage);
+    } catch (error) {
+      console.error('Evolution failed, falling back to old method:', error);
+      // Fallback to old evolution sequence if new one fails
+      await this.evolutionController.playEvolutionSequence(fromStage, toStage);
+    }
 
     // Emit event for UI update
     this.emitEvent('evolution-complete', { stage: toStage });
@@ -134,6 +230,11 @@ export class Companion3DManager {
 
     console.log(`Playing action: ${action}`);
 
+    // Play sound for action if available
+    if (this.soundManager) {
+      this.soundManager.play(action, 0.6);
+    }
+
     await this.evolutionController.playAction(action);
 
     // Show floating icon based on action
@@ -148,6 +249,20 @@ export class Companion3DManager {
     if (icon && this.evolutionController.getCurrentModel()) {
       const model = this.evolutionController.getCurrentModel();
       showFloatingIcon(this.sceneManager, icon, model.position);
+
+      // Burst particles at action location
+      if (this.particlePool) {
+        const moodColors = {
+          eat: '#ffab91',
+          play: '#ffd54f',
+          sleep: '#b39ddb',
+          quest: '#90caf9'
+        };
+        this.particlePool.burst({
+          position: model.position.clone(),
+          color: moodColors[action] || '#ffffff'
+        });
+      }
     }
   }
 
@@ -217,6 +332,12 @@ export class Companion3DManager {
 
     console.log('Disposing 3D companion system...');
 
+    // Dispose raycaster interactions
+    if (this.raycaster) {
+      this.raycaster.dispose();
+      this.raycaster = null;
+    }
+
     if (this.particleSystem) {
       this.particleSystem.dispose();
       this.particleSystem = null;
@@ -232,6 +353,10 @@ export class Companion3DManager {
       this.sceneManager = null;
     }
 
+    // Clear new module references
+    this.particlePool = null;
+    this.cameraRig = null;
+    this.soundManager = null;
     this.currentCanvas = null;
     this.isInitialized = false;
 
