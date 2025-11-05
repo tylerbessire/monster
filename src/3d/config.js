@@ -6,12 +6,28 @@
 export const ASSET_CONFIG = {
   // Model paths (GLB/GLTF files)
   models: {
-    baby: '/models/arlo-baby.glb',
-    teen: '/models/arlo-teen.glb',
-    adult: '/models/arlo-adult.glb',
+    baby: '/models/companion_baby.glb',
+    teen: '/models/companion_teen.glb',
+    adult: '/models/companion_adult.glb',
 
     // Fallback: Use placeholder geometries until real models are available
-    usePlaceholders: true
+    usePlaceholders: false
+  },
+
+  // Shading configuration
+  shading: {
+    toon: true,
+    rim: true,
+    rimColor: '#88b7ff',
+    rimStrength: 1.1
+  },
+
+  // Mood-based animations and colors
+  moods: {
+    happy:   { anim: 'tail_wag', color: '#ffd54f' },
+    calm:    { anim: 'breathe',  color: '#90caf9' },
+    sleepy:  { anim: 'sleep',    color: '#b39ddb' },
+    playful: { anim: 'play',     color: '#ffab91' }
   },
 
   // Animation clip names (must match clips baked into GLB files)
