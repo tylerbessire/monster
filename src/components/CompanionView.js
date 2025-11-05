@@ -84,33 +84,6 @@ export function renderCompanionView(state) {
         </div>
         <div class="stage-badge">${stage}</div>
       </div>
-      
-      <div class="chat-container">
-        ${messages.slice(-5).map(msg => `
-          <div class="message-bubble ${msg.type}">
-            ${msg.text}
-            ${msg.quest ? `
-              <div class="quest-report">
-                <div class="quest-title">📚 ${msg.quest.topic}</div>
-                <div class="quest-content">${msg.quest.fact}</div>
-              </div>
-            ` : ''}
-          </div>
-        `).join('')}
-      </div>
-      
-      ${!isSleeping && !isQuesting ? `
-        <form id="chat-form" class="input-container">
-          <input 
-            type="text" 
-            id="chat-input"
-            class="chat-input" 
-            placeholder="Talk to ${companion.name}..."
-            maxlength="100"
-          />
-          <button type="submit" class="send-button">SEND</button>
-        </form>
-      ` : ''}
     </div>
   `;
 }

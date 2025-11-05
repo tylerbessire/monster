@@ -1,6 +1,7 @@
 import './style.css';
 import { createStore } from './store.js';
 import { renderCompanionView } from './components/CompanionView.js';
+import { renderChatPanel } from './components/ChatPanel.js';
 import { aiService } from './services/aiService.js';
 import { personalityService } from './services/personalityService.js';
 import { questService } from './services/questService.js';
@@ -8,6 +9,15 @@ import { minigameService } from './services/minigameService.js';
 import { levelingService } from './services/evolutionService.js';
 
 const store = createStore();
+
+function ensureChatScrolled() {
+  const chatMessages = document.querySelector('.chat-messages');
+  if (!chatMessages) return;
+  // Keep the newest messages visible without manual scroll
+  requestAnimationFrame(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+}
 
 // Load saved state
 const savedState = localStorage.getItem('companionState');
@@ -142,8 +152,7 @@ function render() {
     content = renderCompanionView(state);
   }
 
-  app.innerHTML = `
-    ${renderNotifications()}
+  const gameboyMarkup = `
     <div class="gameboy-screen" data-theme="${state.theme}">
       ${renderThemeSelector()}
       <div class="screen-inner">
@@ -161,7 +170,20 @@ function render() {
     </div>
   `;
 
+  const layoutMarkup = state.stage === 'companion'
+    ? `<div class="app-layout">${gameboyMarkup}${renderChatPanel(state)}</div>`
+    : `<div class="single-layout">${gameboyMarkup}</div>`;
+
+  app.innerHTML = `
+    ${renderNotifications()}
+    ${layoutMarkup}
+  `;
+
   attachEventListeners();
+
+  if (state.stage === 'companion') {
+    ensureChatScrolled();
+  }
 }
 
 function attachEventListeners() {
@@ -178,7 +200,7 @@ function attachEventListeners() {
   // Notification close buttons
   document.querySelectorAll('.notification-close').forEach(btn => {
     btn.addEventListener('click', () => {
-      store.dismissNotification(btn.dataset.id);
+      store.dismissNotification(Number(btn.dataset.id));
     });
   });
 

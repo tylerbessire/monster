@@ -4,9 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently --kill-others-on-fail --names \"LLAMA,VITE\" \"npm run dev:llama\" \"npm run dev:vite\"",
+    "dev:llama": "node scripts/start-llama.js",
+    "dev:vite": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:llama": "node scripts/check-llama.js"
   },
   "dependencies": {
     "framer-motion": "^11.0.0",
@@ -14,6 +17,7 @@
     "date-fns": "^3.0.0"
   },
   "devDependencies": {
+    "concurrently": "^9.0.1",
     "vite": "^5.0.0"
   }
 }

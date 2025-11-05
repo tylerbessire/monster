@@ -20,15 +20,172 @@ body {
   padding: 20px;
 }
 
+.notifications-container {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.notification {
+  position: relative;
+  min-width: 260px;
+  padding: 16px 48px 16px 20px;
+  border-radius: 12px;
+  border: 3px solid rgba(0, 0, 0, 0.4);
+  background: rgba(15, 56, 15, 0.9);
+  color: #f1f7d2;
+  font-size: 10px;
+  line-height: 1.6;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  animation: toastSlideIn 0.3s ease-out, toastFadeOut 0.3s ease-in both;
+  animation-delay: 0s, 4.7s;
+}
+
+.notification.info {
+  border-color: rgba(155, 188, 15, 0.7);
+}
+
+.notification.warning {
+  border-color: rgba(255, 215, 61, 0.8);
+  background: rgba(120, 60, 12, 0.9);
+  color: #ffe7b3;
+}
+
+.notification.levelup,
+.notification.achievement {
+  border-color: rgba(255, 107, 157, 0.9);
+  background: rgba(45, 27, 62, 0.95);
+  color: #ffd9ff;
+}
+
+.notification.evolution {
+  border-color: rgba(100, 181, 246, 0.8);
+  background: rgba(10, 37, 64, 0.92);
+  color: #d0e8ff;
+}
+
+.notification-content {
+  white-space: pre-line;
+}
+
+.notification-close {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.notification-close:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 #app {
   width: 100%;
-  max-width: 900px;
-  height: 90vh;
-  min-height: 700px;
+  max-width: 1400px;
+  min-height: 80vh;
+}
+
+.app-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.single-layout {
+  width: 100%;
+}
+
+.chat-sidebar {
+  flex: 0 0 360px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 56, 15, 0.85);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow:
+    0 0 0 6px rgba(0, 0, 0, 0.3),
+    0 20px 40px rgba(0, 0, 0, 0.45);
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.chat-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.chat-title {
+  color: #f6ffb0;
+  font-size: 14px;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+.chat-status {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  align-self: flex-start;
+}
+
+.chat-status.active {
+  background: rgba(155, 188, 15, 0.25);
+  color: #d1f27a;
+  border: 1px solid rgba(155, 188, 15, 0.6);
+}
+
+.chat-status.inactive {
+  background: rgba(120, 60, 12, 0.3);
+  color: #ffd9b0;
+  border: 1px solid rgba(255, 215, 61, 0.4);
 }
 
 /* Theme Variables */
-.gameboy-screen[data-theme="classic"] {
+.gameboy-screen[data-theme="classic"],
+.chat-sidebar[data-theme="classic"] {
   --bg-primary: #9cb4a3;
   --bg-secondary: #7a8f82;
   --bg-tertiary: #5a6f62;
@@ -40,7 +197,8 @@ body {
   --accent-dark: #c92a2a;
 }
 
-.gameboy-screen[data-theme="ocean"] {
+.gameboy-screen[data-theme="ocean"],
+.chat-sidebar[data-theme="ocean"] {
   --bg-primary: #a3c4dc;
   --bg-secondary: #7fa8c9;
   --bg-tertiary: #5b8cb5;
@@ -52,7 +210,8 @@ body {
   --accent-dark: #d81b60;
 }
 
-.gameboy-screen[data-theme="sunset"] {
+.gameboy-screen[data-theme="sunset"],
+.chat-sidebar[data-theme="sunset"] {
   --bg-primary: #ffb4a2;
   --bg-secondary: #ff9478;
   --bg-tertiary: #ff7454;
@@ -64,7 +223,8 @@ body {
   --accent-dark: #d81b60;
 }
 
-.gameboy-screen[data-theme="forest"] {
+.gameboy-screen[data-theme="forest"],
+.chat-sidebar[data-theme="forest"] {
   --bg-primary: #b8d4a8;
   --bg-secondary: #8fb87a;
   --bg-tertiary: #669c4c;
@@ -76,7 +236,8 @@ body {
   --accent-dark: #f4a261;
 }
 
-.gameboy-screen[data-theme="candy"] {
+.gameboy-screen[data-theme="candy"],
+.chat-sidebar[data-theme="candy"] {
   --bg-primary: #ffc4e1;
   --bg-secondary: #ff9ec7;
   --bg-tertiary: #ff78ad;
@@ -103,6 +264,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .gameboy-screen::before {
@@ -177,9 +340,9 @@ body {
   flex: 1;
   box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.6);
   position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .screen-inner::before {
@@ -422,15 +585,18 @@ body {
   flex-direction: column;
   gap: 20px;
   flex: 1;
+  min-height: 0;
 }
 
 .companion-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 16px;
-  border-bottom: 4px solid var(--screen-dark);
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 3px solid var(--screen-dark);
+  flex-wrap: wrap;
 }
 
 .companion-info {
@@ -453,28 +619,29 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1 1 100%;
+  max-width: 100%;
 }
 
 .stat-item {
   background: var(--screen-dark);
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
-  border: 3px solid var(--screen-bg);
+  border: 2px solid var(--screen-bg);
 }
 
 .stat-label {
   color: var(--text-secondary);
-  font-size: 8px;
-  margin-bottom: 6px;
+  font-size: 7px;
+  margin-bottom: 4px;
 }
 
 .stat-bar {
   background: var(--screen-bg);
-  height: 12px;
-  border-radius: 4px;
+  height: 10px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -488,7 +655,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  min-height: 170px;
   position: relative;
 }
 
@@ -649,7 +816,21 @@ body {
 }
 
 .chat-container {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.25);
+  border: 3px solid rgba(0, 0, 0, 0.5);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -657,18 +838,33 @@ body {
   padding-right: 8px;
 }
 
-.chat-container::-webkit-scrollbar {
+.chat-messages::-webkit-scrollbar {
   width: 8px;
 }
 
-.chat-container::-webkit-scrollbar-track {
+.chat-messages::-webkit-scrollbar-track {
   background: var(--screen-bg);
   border-radius: 4px;
 }
 
-.chat-container::-webkit-scrollbar-thumb {
+.chat-messages::-webkit-scrollbar-thumb {
   background: var(--screen-dark);
   border-radius: 4px;
+}
+
+.chat-footer {
+  margin-top: 16px;
+}
+
+.chat-disabled {
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  padding: 16px;
+  border-radius: 12px;
+  color: #f6ffb0;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .message-bubble {

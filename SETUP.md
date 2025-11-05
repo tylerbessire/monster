@@ -7,12 +7,18 @@
    npm install
    ```
 
-2. **Run Development Server**
+2. **Run Development Server + llama.cpp**
    ```bash
    npm run dev
    ```
 
-3. **Optional: Set up llama.cpp for AI responses** (see below)
+   This starts both the Vite dev server and the local llama.cpp server (if built and the model exists).
+
+3. **Optional: Check server health**
+   ```bash
+   npm run check:llama
+   ```
+   Use this once the dev servers are up to confirm the llama.cpp endpoint is reachable.
 
 ---
 
@@ -28,13 +34,9 @@ For intelligent, contextual responses from your companion, set up llama.cpp with
 git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
 
-# Build
-make
-
-# Or build with optimizations (faster)
-make LLAMA_METAL=1  # macOS with Metal
-make LLAMA_CUDA=1   # Linux with NVIDIA GPU
-make LLAMA_OPENBLAS=1  # CPU with OpenBLAS
+# Configure & build (Release)
+cmake -B build
+cmake --build build --config Release
 ```
 
 #### Windows:
@@ -77,35 +79,27 @@ Choose a model based on your system:
 ### Step 3: Run llama.cpp Server
 
 ```bash
-cd llama.cpp
-
-# Basic usage (adjust path to your model)
-./llama-server -m models/phi-2.Q4_K_M.gguf --port 8080 -c 2048
-
-# With more options
-./llama-server \
-  -m models/phi-2.Q4_K_M.gguf \
-  --port 8080 \
-  -c 2048 \
-  --threads 4 \
-  --ctx-size 2048 \
-  --n-predict 150
+npm run dev:llama
 ```
 
-#### Server Options Explained:
-- `-m` - Path to your GGUF model file
-- `--port 8080` - Server port (must match config.js)
-- `-c 2048` - Context size (how much conversation to remember)
-- `--threads 4` - CPU threads to use
-- `--ctx-size` - Maximum context length
-- `--n-predict` - Maximum response length
+This uses `scripts/start-llama.js` to launch `llama.cpp/build/bin/llama-server` with reasonable defaults. You can override the port, context size, or thread count via environment variables (`LLAMA_PORT`, `LLAMA_CONTEXT`, `LLAMA_THREADS`).
+
+To launch both the llama.cpp server and Vite UI together:
+
+```bash
+npm run dev
+```
 
 ### Step 4: Verify Connection
 
-1. Open your browser and go to `http://localhost:5173` (Vite dev server)
-2. Look for console message: `🦙 llama.cpp server: connected`
-3. If you see `⚠️ llama.cpp server offline`, check that:
-   - llama.cpp server is running on port 8080
+1. Use the automated health check:
+   ```bash
+   npm run check:llama
+   ```
+2. Open your browser and go to `http://localhost:5173` (Vite dev server)
+3. Look for console message: `🦙 llama.cpp server: connected`
+4. If you see `⚠️ llama.cpp server offline`, check that:
+   - llama.cpp server is running on port 8080 (`npm run dev:llama`)
    - No firewall blocking localhost connections
 
 ---

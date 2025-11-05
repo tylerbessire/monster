@@ -159,23 +159,25 @@ export function createStore() {
 
     // Add notification to queue
     addNotification: (notification) => {
-      const notifications = state.notifications || [];
+      const notifications = [...(state.notifications || [])];
+      const id = Date.now() + Math.random();
       notifications.push({
         ...notification,
-        id: Date.now() + Math.random(),
+        id,
         timestamp: Date.now()
       });
       store.setState({ notifications });
 
       // Auto-dismiss after 5 seconds
       setTimeout(() => {
-        store.dismissNotification(notification.id);
+        store.dismissNotification(id);
       }, 5000);
     },
 
     // Dismiss notification
     dismissNotification: (id) => {
-      const notifications = (state.notifications || []).filter(n => n.id !== id);
+      const targetId = Number(id);
+      const notifications = (state.notifications || []).filter(n => n.id !== targetId);
       store.setState({ notifications });
     }
   };
