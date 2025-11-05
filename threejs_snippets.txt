@@ -1,0 +1,47 @@
+
+// src/3d/models.js (addition)
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+const loader = new GLTFLoader();
+
+export async function loadCompanion(stage, onProgress) {
+  const map = {
+    baby:  '/models/companion_baby.glb',
+    teen:  '/models/companion_teen.glb',
+    adult: '/models/companion_adult.glb',
+  };
+  const url = map[stage];
+  return new Promise((resolve, reject) => {
+    loader.load(url, gltf => {
+      // normalize scale/origin if needed
+      gltf.scene.traverse(o => { o.frustumCulled = false; });
+      resolve(gltf);
+    }, onProgress, reject);
+  });
+}
+
+// src/3d/animationControllerV2.js (sketch)
+import { AnimationMixer, LoopRepeat } from 'three';
+
+export class AnimationControllerV2 {
+  constructor(model) {
+    this.mixer = new AnimationMixer(model);
+    this.clips = {};
+  }
+  setClips(clips) {
+    clips.forEach(c => this.clips[c.name] = c);
+  }
+  play(name, {fade=0.3, loop=true} = {}) {
+    const clip = this.clips[name];
+    if (!clip) return;
+    if (this.action) {
+      this.action.fadeOut(fade);
+    }
+    const action = this.mixer.clipAction(clip);
+    action.reset();
+    action.setLoop(loop ? LoopRepeat : 0, Infinity);
+    action.fadeIn(fade).play();
+    this.action = action;
+  }
+  update(dt) { this.mixer.update(dt); }
+}
