@@ -7,7 +7,7 @@ export class EvolutionService {
       baby: {
         name: 'Baby',
         minLevel: 1,
-        maxLevel: 4,
+        maxLevel: 15,
         description: 'A cute baby companion, full of wonder',
         sprite: 'baby',
         statsMultiplier: 1.0,
@@ -15,8 +15,8 @@ export class EvolutionService {
       },
       teen: {
         name: 'Teen',
-        minLevel: 5,
-        maxLevel: 9,
+        minLevel: 16,
+        maxLevel: 35,
         description: 'An energetic teen, eager to learn',
         sprite: 'teen',
         statsMultiplier: 1.3,
@@ -24,7 +24,7 @@ export class EvolutionService {
       },
       adult: {
         name: 'Adult',
-        minLevel: 10,
+        minLevel: 36,
         maxLevel: 99,
         description: 'A wise adult companion, your true friend',
         sprite: 'adult',
@@ -38,8 +38,8 @@ export class EvolutionService {
    * Get evolution stage based on level
    */
   getStageByLevel(level) {
-    if (level >= 10) return 'adult';
-    if (level >= 5) return 'teen';
+    if (level >= 36) return 'adult';
+    if (level >= 16) return 'teen';
     return 'baby';
   }
 

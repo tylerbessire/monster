@@ -60,29 +60,37 @@ export function renderCompanionView(state) {
           </div>
         </div>
       </div>
-      
-      <div class="companion-sprite">
-        <div class="sprite ${stage} ${isSleeping ? 'sleeping' : ''} ${isQuesting ? 'questing' : ''}">
-          <div class="sprite-body">
-            <div class="sprite-ears">
-              <div class="ear"></div>
-              <div class="ear"></div>
-            </div>
-            <div class="sprite-eyes">
-              <div class="eye ${isSleeping ? 'closed' : ''}"></div>
-              <div class="eye ${isSleeping ? 'closed' : ''}"></div>
-            </div>
-            <div class="sprite-cheeks">
-              <div class="cheek"></div>
-              <div class="cheek"></div>
-            </div>
-            <div class="sprite-mouth"></div>
-            ${stage !== 'baby' ? '<div class="sprite-tail"></div>' : ''}
-          </div>
-          ${isSleeping ? '<div class="sleep-indicator">zzz</div>' : ''}
-          ${isQuesting ? '<div class="quest-indicator">🗺️</div>' : ''}
+
+      <!-- 3D Canvas Stage -->
+      <div class="companion-stage" id="arlo-stage">
+        <canvas id="arlo-canvas"></canvas>
+        <div class="loading-overlay" id="loading-3d" style="display: none;">
+          <div class="loading-spinner">Loading 3D...</div>
         </div>
-        <div class="stage-badge">${stage}</div>
+        <!-- Fallback 2D Sprite (shown if WebGL unavailable) -->
+        <div class="companion-sprite fallback-2d" id="fallback-sprite" style="display: none;">
+          <div class="sprite ${stage} ${isSleeping ? 'sleeping' : ''} ${isQuesting ? 'questing' : ''}">
+            <div class="sprite-body">
+              <div class="sprite-ears">
+                <div class="ear"></div>
+                <div class="ear"></div>
+              </div>
+              <div class="sprite-eyes">
+                <div class="eye ${isSleeping ? 'closed' : ''}"></div>
+                <div class="eye ${isSleeping ? 'closed' : ''}"></div>
+              </div>
+              <div class="sprite-cheeks">
+                <div class="cheek"></div>
+                <div class="cheek"></div>
+              </div>
+              <div class="sprite-mouth"></div>
+              ${stage !== 'baby' ? '<div class="sprite-tail"></div>' : ''}
+            </div>
+            ${isSleeping ? '<div class="sleep-indicator">zzz</div>' : ''}
+            ${isQuesting ? '<div class="quest-indicator">🗺️</div>' : ''}
+          </div>
+          <div class="stage-badge">${stage}</div>
+        </div>
       </div>
     </div>
   `;

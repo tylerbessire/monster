@@ -651,6 +651,56 @@ body {
   transition: width 0.3s ease;
 }
 
+/* 3D Canvas Stage */
+.companion-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+  position: relative;
+  background: linear-gradient(180deg, #e8f4f8 0%, #d4e8f0 100%);
+  border-radius: 8px;
+  margin: 16px;
+  overflow: hidden;
+}
+
+#arlo-canvas {
+  display: block;
+  width: 100%;
+  height: 250px;
+  cursor: pointer;
+  image-rendering: auto;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 10;
+}
+
+.loading-spinner {
+  font-size: 12px;
+  color: #667eea;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Fallback 2D sprite (when WebGL unavailable) */
+.companion-sprite.fallback-2d {
+  display: none;
+}
+
 .companion-sprite {
   display: flex;
   justify-content: center;
