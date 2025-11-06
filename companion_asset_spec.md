@@ -60,8 +60,4 @@ public/textures/ (optional)
 - All animations visible under `animations[]` with names above
 - No missing textures; emissive color present if specified
 - Proper scale/origin; no flipped normals; tangents okay
-- Poly budget and draw call count reasonable (≤ 2 materials)
 
-## 7) License & Originality
-- You must create **fully original** meshes, textures, and rig from scratch. Do **not** reuse or modify any copyrighted assets.
-- Deliver with a statement of originality granting us rights to use and distribute within our application.
