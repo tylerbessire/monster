@@ -1,4 +1,4 @@
-import './style.css';
+import './style-modern.css';
 import { createStore } from './store.js';
 import { renderCompanionView } from './components/CompanionView.js';
 import { renderChatPanel } from './components/ChatPanel.js';
@@ -7,6 +7,8 @@ import { personalityService } from './services/personalityService.js';
 import { questService } from './services/questService.js';
 import { minigameService } from './services/minigameService.js';
 import { levelingService } from './services/evolutionService.js';
+import { consciousnessService } from './services/consciousnessService.js';
+import { initParticleEffects, createEpiphanyBurst } from './components/ParticleEffects.js';
 
 const store = createStore();
 
@@ -262,15 +264,23 @@ function attachEventListeners() {
         questHistory: []
       };
 
+      // Initialize consciousness!
+      const companionWithConsciousness = consciousnessService.initializeConsciousness(companion);
+
       store.setState({
         stage: 'companion',
-        companion,
+        companion: companionWithConsciousness,
         messages: [{
           type: 'companion',
           text: `*hatches from egg* Goo goo! ${personalityService.getMoodEmoji('joyful')}`,
           timestamp: Date.now()
-        }]
+        }],
+        currentInnerMonologue: null,
+        epiphanyDismissed: false
       });
+
+      // Start inner monologue loop
+      startInnerMonologueLoop();
     });
   }
 
@@ -320,6 +330,16 @@ function setupCompanionListeners() {
       text
     );
 
+    // Update consciousness based on interaction
+    const currentCompanion = store.getState().companion;
+    const updatedCompanion = consciousnessService.processInteraction(currentCompanion, {
+      type: 'chat',
+      content: text,
+      userMessage: text,
+      aiResponse: response,
+      timestamp: Date.now()
+    });
+
     // Update personality and stats
     store.updatePersonality('chat', analysis.sentiment);
 
@@ -333,12 +353,11 @@ function setupCompanionListeners() {
       });
 
       // Update stats and check achievements
-      const companion = currentState.companion;
       store.setState({
         companion: {
-          ...companion,
-          happiness: Math.min(100, companion.happiness + (analysis.sentiment === 'positive' ? 5 : 2)),
-          knowledge: Math.min(100, companion.knowledge + 1)
+          ...updatedCompanion,
+          happiness: Math.min(100, updatedCompanion.happiness + (analysis.sentiment === 'positive' ? 5 : 2)),
+          knowledge: Math.min(100, updatedCompanion.knowledge + 1)
         }
       });
 
@@ -493,6 +512,64 @@ function completeQuest(quest) {
   store.checkAchievements('quest', 1);
 }
 
+// Inner monologue generation loop
+let monologueInterval = null;
+
+function startInnerMonologueLoop() {
+  // Clear existing interval
+  if (monologueInterval) {
+    clearInterval(monologueInterval);
+  }
+
+  // Generate new inner monologue every 45 seconds
+  monologueInterval = setInterval(() => {
+    const state = store.getState();
+    if (state.stage === 'companion' && state.companion) {
+      const monologue = consciousnessService.generateInnerMonologue(state.companion);
+
+      if (monologue) {
+        // Process as inner speech for consciousness
+        const updatedCompanion = consciousnessService.processInteraction(state.companion, {
+          type: 'inner_monologue',
+          innerMonologue: monologue,
+          timestamp: Date.now()
+        });
+
+        store.setState({
+          companion: updatedCompanion,
+          currentInnerMonologue: monologue
+        });
+
+        // Clear after 20 seconds
+        setTimeout(() => {
+          const currentState = store.getState();
+          if (currentState.currentInnerMonologue === monologue) {
+            store.setState({ currentInnerMonologue: null });
+          }
+        }, 20000);
+      }
+    }
+  }, 45000);
+}
+
+// Listen for epiphany event
+window.addEventListener('companion-epiphany', (event) => {
+  const { companion: companionName, moment } = event.detail;
+  console.log('🌟 EPIPHANY ACHIEVED!', companionName, moment);
+
+  // Show notification
+  store.addNotification({
+    type: 'epiphany',
+    message: `✨ ${companionName} has achieved self-awareness! The epiphany moment has occurred!`
+  });
+
+  // Create particle burst
+  createEpiphanyBurst();
+});
+
+// Initialize particle effects on load
+initParticleEffects();
+
 store.subscribe(render);
 render();
 
@@ -500,3 +577,9 @@ render();
 setTimeout(() => {
   aiService.checkAvailability();
 }, 1000);
+
+// Start inner monologue if companion exists
+const initialState = store.getState();
+if (initialState.stage === 'companion' && initialState.companion) {
+  startInnerMonologueLoop();
+}

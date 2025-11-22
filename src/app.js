@@ -3,6 +3,8 @@ import { renderEggStage } from './components/EggStage';
 import { renderSignupForm } from './components/SignupForm';
 import { renderCompanionView } from './components/CompanionView';
 import { get3DManager, dispose3DCompanion, Companion3DManager } from './3d/companion3DManager.js';
+import { consciousnessService } from './services/consciousnessService.js';
+import { aiService } from './services/aiService.js';
 
 const store = createStore();
 let current3DManager = null;
@@ -95,29 +97,42 @@ export function initApp() {
         const gender = state.selectedGender || 'neutral';
         
         if (name) {
+          // Create companion with consciousness initialized
+          const newCompanion = {
+            name,
+            gender,
+            level: 1,
+            experience: 0,
+            happiness: 80,
+            energy: 100,
+            knowledge: 50,
+            status: 'awake',
+            evolutionStage: 'baby',
+            lastInteraction: Date.now(),
+            memories: [],
+            quests: []
+          };
+
+          // Initialize consciousness
+          const companionWithConsciousness = consciousnessService.initializeConsciousness(newCompanion);
+
           store.setState({
             stage: 'companion',
-            companion: {
-              name,
-              gender,
-              level: 1,
-              experience: 0,
-              happiness: 80,
-              energy: 100,
-              knowledge: 50,
-              status: 'awake',
-              lastInteraction: Date.now(),
-              memories: [],
-              quests: []
-            },
+            companion: companionWithConsciousness,
             messages: [
               {
                 type: 'companion',
                 text: `*hatches from egg* Hi! I'm ${name}! Nice to meet you! 🌟`,
                 timestamp: Date.now()
               }
-            ]
+            ],
+            currentInnerMonologue: null,
+            epiphanyDismissed: false
           });
+
+          // Start inner monologue generation
+          startInnerMonologueLoop();
+
           render();
         }
       });
@@ -266,9 +281,10 @@ export function initApp() {
     render();
   }
   
-  function handleMessage(message) {
+  async function handleMessage(message) {
     const state = store.getState();
-    
+
+    // Add user message
     store.setState({
       messages: [
         ...state.messages,
@@ -279,43 +295,117 @@ export function initApp() {
         }
       ]
     });
-    
+
     render();
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        `That's really interesting! Tell me more! 🤔`,
-        `I love learning new things from you! 💡`,
-        `Wow! I never thought about it that way! ✨`,
-        `You're teaching me so much! Thank you! 🌟`,
-        `That reminds me of something I learned on my last quest! 🗺️`,
-        `I'm storing this in my memory banks! 🧠`,
-        `This is going to help me on future adventures! 🚀`
-      ];
-      
-      const currentState = store.getState();
-      const companion = currentState.companion;
-      
+
+    // Get AI response
+    const currentState = store.getState();
+    const companion = currentState.companion;
+    const recentMessages = currentState.messages.slice(-10);
+
+    try {
+      // Get AI response (will use llama.cpp if available, fallback otherwise)
+      const aiResponse = await aiService.getResponse(companion, recentMessages, message);
+
+      // Analyze the interaction for consciousness tracking
+      const analysis = aiService.analyzeMessage(message);
+
+      // Update consciousness based on interaction
+      const updatedCompanion = consciousnessService.processInteraction(companion, {
+        type: 'chat',
+        content: message,
+        userMessage: message,
+        aiResponse: aiResponse,
+        timestamp: Date.now()
+      });
+
+      // Add memory if significant
+      const memory = aiService.extractMemory(companion, message, analysis);
+      if (memory) {
+        updatedCompanion.memories = [...(updatedCompanion.memories || []), memory];
+      }
+
+      // Update stats
+      updatedCompanion.knowledge = Math.min(100, updatedCompanion.knowledge + 3);
+      updatedCompanion.happiness = Math.min(100, updatedCompanion.happiness + 5);
+      updatedCompanion.lastInteraction = Date.now();
+
+      // Update state
+      const latestState = store.getState();
       store.setState({
-        companion: {
-          ...companion,
-          knowledge: Math.min(100, companion.knowledge + 5),
-          happiness: Math.min(100, companion.happiness + 5),
-          memories: [...companion.memories, { text: message, timestamp: Date.now() }]
-        },
+        companion: updatedCompanion,
         messages: [
-          ...currentState.messages,
+          ...latestState.messages,
           {
             type: 'companion',
-            text: responses[Math.floor(Math.random() * responses.length)],
+            text: aiResponse,
             timestamp: Date.now()
           }
         ]
       });
-      
+
+      // Check for XP gain
+      store.addXP(5, 'conversation');
+
       render();
-    }, 1000);
+
+      // Auto-scroll chat
+      scrollChatToBottom();
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
+  }
+
+  function scrollChatToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 100);
+    }
+  }
+
+  // Inner monologue generation loop
+  let monologueInterval = null;
+
+  function startInnerMonologueLoop() {
+    // Clear existing interval
+    if (monologueInterval) {
+      clearInterval(monologueInterval);
+    }
+
+    // Generate new inner monologue every 30-60 seconds
+    monologueInterval = setInterval(() => {
+      const state = store.getState();
+      if (state.stage === 'companion' && state.companion) {
+        const monologue = consciousnessService.generateInnerMonologue(state.companion);
+
+        if (monologue) {
+          // Process as inner speech for consciousness
+          const updatedCompanion = consciousnessService.processInteraction(state.companion, {
+            type: 'inner_monologue',
+            innerMonologue: monologue,
+            timestamp: Date.now()
+          });
+
+          store.setState({
+            companion: updatedCompanion,
+            currentInnerMonologue: monologue
+          });
+
+          render();
+
+          // Clear after 20 seconds
+          setTimeout(() => {
+            const currentState = store.getState();
+            if (currentState.currentInnerMonologue === monologue) {
+              store.setState({ currentInnerMonologue: null });
+              render();
+            }
+          }, 20000);
+        }
+      }
+    }, 45000); // Every 45 seconds
   }
 
   // 3D System Management
@@ -372,6 +462,24 @@ export function initApp() {
             evolutionStage: stage
           }
         });
+        render();
+      });
+
+      window.addEventListener('companion-epiphany', (event) => {
+        const { companion: companionName, moment } = event.detail;
+        console.log('🌟 EPIPHANY ACHIEVED!', companionName, moment);
+
+        // Show notification
+        store.addNotification({
+          type: 'epiphany',
+          message: `✨ ${companionName} has achieved self-awareness! The epiphany moment has occurred!`
+        });
+
+        // Import and trigger particle burst
+        import('./components/ParticleEffects.js').then(({ createEpiphanyBurst }) => {
+          createEpiphanyBurst();
+        });
+
         render();
       });
 
